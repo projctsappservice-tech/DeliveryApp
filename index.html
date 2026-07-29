@@ -9,7 +9,7 @@
     <!-- ===== Leaflet CSS ===== -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json?v=1">
+<link rel="manifest" href="manifest.json?v=2">
 <meta name="theme-color" content="#0d6efd">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -4190,20 +4190,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 customerNewOrderModal.classList.add('active');
             });
 
-            function populateCustomerDatalists(currentUser) {
-                const list = usersList.filter(u =>
-                    u.role !== 'مدير' && u.id !== currentUser.id
-                );
-                const datalist = document.getElementById('customerBuyerList');
-                if (datalist) {
-                    datalist.innerHTML = '';
-                    list.forEach(u => {
-                        const opt = document.createElement('option');
-                        opt.value = u.phone;
-                        datalist.appendChild(opt);
-                    });
-                }
-            }
+    function populateCustomerDatalists(currentUser) {
+    // تشمل جميع المستخدمين (بما فيهم المدراء)
+    const list = usersList.filter(u => u.id !== currentUser.id);
+    const datalist = document.getElementById('customerBuyerList');
+    if (datalist) {
+        datalist.innerHTML = '';
+        list.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.phone;
+            opt.textContent = u.name + ' - ' + u.phone + ' (' + u.role + ')';
+            datalist.appendChild(opt);
+        });
+    }
+}
 
             function closeCustomerNewOrder() {
                 customerNewOrderModal.classList.remove('active');
@@ -4214,46 +4214,45 @@ document.addEventListener('DOMContentLoaded', function() {
             customerNewOrderCancel.addEventListener('click', closeCustomerNewOrder);
 
             // ===== CUSTOMER BUYER SEARCH =====
-            function fillCustomerField(target) {
-                const searchInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) +
-                    'Search');
-                const nameInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) +
-                    'Name');
-                const addressInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) +
-                    'Address');
-                const val = searchInput.value.trim();
-                const hiddenFields = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) +
-                    'HiddenFields');
-                if (val === '') {
-                    if (nameInput) nameInput.value = '';
-                    if (addressInput) addressInput.value = '';
-                    if (hiddenFields) {
-                        hiddenFields.classList.remove('show');
-                    }
-                    return;
-                }
-                if (hiddenFields) {
-                    hiddenFields.classList.add('show');
-                }
-                const list = usersList.filter(u => u.role !== 'مدير');
-                let found = null;
-                for (let u of list) {
-                    if (u.phone && u.phone === val) {
-                        found = u;
-                        break;
-                    }
-                }
-                if (found) {
-                    searchInput.value = found.phone;
-                    if (nameInput) nameInput.value = found.name || '';
-                    if (addressInput) addressInput.value = found.address || '';
-                    clearCustomerValidationErrors(target);
-                } else {
-                    if (nameInput) nameInput.value = '';
-                    if (addressInput) addressInput.value = '';
-                }
-            }
-
+           function fillCustomerField(target) {
+    const searchInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) + 'Search');
+    const nameInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) + 'Name');
+    const addressInput = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) + 'Address');
+    const val = searchInput.value.trim();
+    const hiddenFields = document.getElementById('customer' + target.charAt(0).toUpperCase() + target.slice(1) + 'HiddenFields');
+    
+    if (val === '') {
+        if (nameInput) nameInput.value = '';
+        if (addressInput) addressInput.value = '';
+        if (hiddenFields) {
+            hiddenFields.classList.remove('show');
+        }
+        return;
+    }
+    
+    if (hiddenFields) {
+        hiddenFields.classList.add('show');
+    }
+    
+    // البحث في جميع المستخدمين (بما فيهم المدراء)
+    let found = null;
+    for (let u of usersList) {
+        if (u.phone && u.phone === val) {
+            found = u;
+            break;
+        }
+    }
+    
+    if (found) {
+        searchInput.value = found.phone;
+        if (nameInput) nameInput.value = found.name || '';
+        if (addressInput) addressInput.value = found.address || '';
+        clearCustomerValidationErrors(target);
+    } else {
+        if (nameInput) nameInput.value = '';
+        if (addressInput) addressInput.value = '';
+    }
+}
             const buyerSearch = document.getElementById('customerBuyerSearch');
             if (buyerSearch) {
                 buyerSearch.addEventListener('input', function() { fillCustomerField('buyer'); });
@@ -4311,16 +4310,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return Math.floor(100000 + Math.random() * 900000).toString();
             }
 
-            function openWhatsApp(phone, message) {
-                if (!phone) {
-                    alert('⚠️ رقم الهاتف غير متوفر');
-                    return;
-                }
-                const cleanPhone = phone.replace(/\D/g, '');
-                const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-                window.open(url, '_blank', 'noopener,noreferrer');
-                console.log('📱 تم فتح واتساب في نافذة جديدة:', url);
-            }
+       function openWhatsApp(phone, message) {
+    if (!phone) {
+        alert('⚠️ رقم الهاتف غير متوفر');
+        return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    const encodedMessage = encodeURIComponent(message);
+    
+    // فتح التطبيق مباشرة عبر تغيير الـ URL
+    window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodedMessage}`;
+    
+    console.log('📱 جاري فتح واتساب تطبيق');
+}
 
             customerSubmitOrderBtn.addEventListener('click', function() {
                 const productName = customerProductName.value.trim();
@@ -5123,24 +5125,24 @@ window.openLocationModalForSeller = function(orderId) {
             // ===== RENDER ORDER DETAIL =====
             // ===== استبدل دالة renderOrderDetail بالكامل بهذا الكود =====
 
-            function renderOrderDetail(order, editMode = false) {
-                orderDetailId.textContent = order.id;
+          function renderOrderDetail(order, editMode = false) {
+    orderDetailId.textContent = order.id;
 
-                const hasImages = order.images && order.images.some(img => img && img !== '');
-                let imagesHtml = '';
-                if (hasImages) {
-                    imagesHtml = '<div class="images-grid">';
-                    order.images.forEach(img => {
-                        if (img && img !== '') {
-                            imagesHtml += `<img src="${img}" onclick="openImagePreview(['${img}'], true)" />`;
-                        }
-                    });
-                    imagesHtml += '</div>';
-                } else {
-                    imagesHtml = '<span style="color:#6b7f9e; font-size:14px;">لا توجد صور</span>';
-                }
+    const hasImages = order.images && order.images.some(img => img && img !== '');
+    let imagesHtml = '';
+    if (hasImages) {
+        imagesHtml = '<div class="images-grid">';
+        order.images.forEach(img => {
+            if (img && img !== '') {
+                imagesHtml += `<img src="${img}" onclick="openImagePreview(['${img}'], true)" />`;
+            }
+        });
+        imagesHtml += '</div>';
+    } else {
+        imagesHtml = '<span style="color:#6b7f9e; font-size:14px;">لا توجد صور</span>';
+    }
 
-   // ===== رابط موقع المشتري =====
+    // ===== رابط موقع المشتري =====
     let buyerLocationHtml = '';
     if (order.buyer.addressLink && order.buyer.addressLink.trim() !== '') {
         buyerLocationHtml = `<a href="${order.buyer.addressLink}" target="_blank" style="color:#17a2b8; text-decoration:underline;">${order.buyer.addressLink}</a>`;
@@ -5171,70 +5173,81 @@ window.openLocationModalForSeller = function(orderId) {
             `<button class="btn-location" onclick="openLocationModalForOrder('${order.id}', 'seller')" style="font-size:12px; padding:4px 14px;"><i class="fas fa-plus"></i> إضافة</button>`
         );
 
-                const statusBadge = order.status === 'في الشحن' ? 'badge-shipping' :
-                    order.status === 'في الطريق' ? 'badge-transit' :
-                    order.status === 'تم الاستلام' ? 'badge-received' : 'badge-default';
+    // ===== أيقونات واتساب =====
+    const sellerWhatsApp = order.seller.phone ? 
+        `<a href="javascript:void(0)" onclick="sendWhatsAppToSeller('${order.id}')" class="whatsapp-link" title="إرسال رسالة واتساب للبائع" style="color:#25D366; font-size:1.2em; margin-right:8px;">
+            <i class="fab fa-whatsapp"></i>
+        </a>` : '';
 
-                // قائمة الحالات للاختيار
-                const statusOptions = ['طلب جديد', 'في الشحن', 'في الطريق', 'تم الاستلام', 'لم استلم'];
-                let statusSelectHtml = '';
-                if (editMode) {
-                    statusSelectHtml =
-                        `<select id="editOrderStatus" style="width:100%; padding:8px 12px; border:1px solid #dce3ef; border-radius:12px; font-size:14px; background:#fafdff; font-family:inherit;">
-                            ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
-                        </select>`;
-                } else {
-                    statusSelectHtml = `<span class="badge ${statusBadge}" style="font-size:14px;">${order.status}</span>`;
-                }
+    const buyerWhatsApp = order.buyer.phone ? 
+        `<a href="javascript:void(0)" onclick="sendWhatsAppToBuyer('${order.id}')" class="whatsapp-link" title="إرسال رسالة واتساب للمشتري" style="color:#25D366; font-size:1.2em; margin-right:8px;">
+            <i class="fab fa-whatsapp"></i>
+        </a>` : '';
 
-                // تنسيق الحقول في وضع القراءة فقط
-                const readonlyAttr = editMode ? '' : 'readonly';
-                const inputStyle = editMode ? '' : 'background:#f0f4fc; color:#1f2a44; font-weight:500; cursor:default;';
+    const delegateWhatsApp = order.delegate.phone ? 
+        `<a href="javascript:void(0)" onclick="sendWhatsAppToDelegate('${order.id}')" class="whatsapp-link" title="إرسال رسالة واتساب للمندوب" style="color:#25D366; font-size:1.2em; margin-right:8px;">
+            <i class="fab fa-whatsapp"></i>
+        </a>` : '';
 
-                // ===== إنشاء قوائم منسدلة للمستخدمين (البائع، المشتري، المندوب) =====
-                // جميع المستخدمين (زبون + مندوب) للبائع والمشتري
-                const allUsers = usersList;
-                // المندوبين فقط
-                const delegates = usersList;
+    const statusBadge = order.status === 'في الشحن' ? 'badge-shipping' :
+        order.status === 'في الطريق' ? 'badge-transit' :
+        order.status === 'تم الاستلام' ? 'badge-received' : 'badge-default';
 
-                // توليد خيارات البائع (جميع المستخدمين ما عدا المدير)
-                let sellerOptions = `<option value="">اختر بائع</option>`;
-                allUsers.forEach(u => {
-                    const selected = (u.phone === order.seller.phone) ? 'selected' : '';
-                    sellerOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
-                });
-                // إضافة البائع الحالي إذا لم يكن في القائمة
-                if (!allUsers.find(u => u.phone === order.seller.phone) && order.seller.phone) {
-                    sellerOptions +=
-                        `<option value="${order.seller.phone}" selected>${order.seller.name} - ${order.seller.phone}</option>`;
-                }
+    // قائمة الحالات للاختيار
+    const statusOptions = ['طلب جديد', 'في الشحن', 'في الطريق', 'تم الاستلام', 'لم استلم'];
+    let statusSelectHtml = '';
+    if (editMode) {
+        statusSelectHtml =
+            `<select id="editOrderStatus" style="width:100%; padding:8px 12px; border:1px solid #dce3ef; border-radius:12px; font-size:14px; background:#fafdff; font-family:inherit;">
+                ${statusOptions.map(s => `<option value="${s}" ${s === order.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>`;
+    } else {
+        statusSelectHtml = `<span class="badge ${statusBadge}" style="font-size:14px;">${order.status}</span>`;
+    }
 
-                // توليد خيارات المشتري (جميع المستخدمين ما عدا المدير)
-                let buyerOptions = `<option value="">اختر مشتري</option>`;
-                allUsers.forEach(u => {
-                    const selected = (u.phone === order.buyer.phone) ? 'selected' : '';
-                    buyerOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
-                });
-                if (!allUsers.find(u => u.phone === order.buyer.phone) && order.buyer.phone) {
-                    buyerOptions +=
-                        `<option value="${order.buyer.phone}" selected>${order.buyer.name} - ${order.buyer.phone}</option>`;
-                }
+    // تنسيق الحقول في وضع القراءة فقط
+    const readonlyAttr = editMode ? '' : 'readonly';
+    const inputStyle = editMode ? '' : 'background:#f0f4fc; color:#1f2a44; font-weight:500; cursor:default;';
 
-                // توليد خيارات المندوب (المندوبين فقط)
-                let delegateOptions = `<option value="">اختر مندوب</option>`;
-                delegates.forEach(u => {
-                    const selected = (u.phone === order.delegate.phone) ? 'selected' : '';
-                    delegateOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
-                });
-                // إضافة المندوب الحالي إذا لم يكن في القائمة
-                if (!delegates.find(u => u.phone === order.delegate.phone) && order.delegate.phone) {
-                    delegateOptions +=
-                        `<option value="${order.delegate.phone}" selected>${order.delegate.name} - ${order.delegate.phone}</option>`;
-                }
+    // ===== إنشاء قوائم منسدلة للمستخدمين (البائع، المشتري، المندوب) =====
+    const allUsers = usersList;
+    const delegates = usersList.filter(u => u.role === 'مندوب' || u.role === 'مدير');
 
-                // ===== في وضع التعديل: حقول بحث مع قائمة منسدلة =====
-                // حقل البائع مع بحث (رقم الهاتف فقط)
-               let sellerFieldHtml = '';
+    // توليد خيارات البائع (جميع المستخدمين ما عدا المدير)
+    let sellerOptions = `<option value="">اختر بائع</option>`;
+    allUsers.forEach(u => {
+        const selected = (u.phone === order.seller.phone) ? 'selected' : '';
+        sellerOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
+    });
+    if (!allUsers.find(u => u.phone === order.seller.phone) && order.seller.phone) {
+        sellerOptions +=
+            `<option value="${order.seller.phone}" selected>${order.seller.name} - ${order.seller.phone}</option>`;
+    }
+
+    // توليد خيارات المشتري (جميع المستخدمين ما عدا المدير)
+    let buyerOptions = `<option value="">اختر مشتري</option>`;
+    allUsers.forEach(u => {
+        const selected = (u.phone === order.buyer.phone) ? 'selected' : '';
+        buyerOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
+    });
+    if (!allUsers.find(u => u.phone === order.buyer.phone) && order.buyer.phone) {
+        buyerOptions +=
+            `<option value="${order.buyer.phone}" selected>${order.buyer.name} - ${order.buyer.phone}</option>`;
+    }
+
+    // توليد خيارات المندوب (المندوبين فقط)
+    let delegateOptions = `<option value="">اختر مندوب</option>`;
+    delegates.forEach(u => {
+        const selected = (u.phone === order.delegate.phone) ? 'selected' : '';
+        delegateOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
+    });
+    if (!delegates.find(u => u.phone === order.delegate.phone) && order.delegate.phone) {
+        delegateOptions +=
+            `<option value="${order.delegate.phone}" selected>${order.delegate.name} - ${order.delegate.phone}</option>`;
+    }
+
+    // ===== في وضع التعديل: حقول بحث مع قائمة منسدلة =====
+    let sellerFieldHtml = '';
     if (editMode) {
         sellerFieldHtml = `
             <div style="position:relative;">
@@ -5264,11 +5277,19 @@ window.openLocationModalForSeller = function(orderId) {
                 <span style="font-size:13px; color:#6b7f9e;"><i class="fas fa-link"></i> رابط الموقع:</span>
                 <span style="font-size:14px; color:#0b1e3a;">${sellerLocationHtml}</span>
                 ${sellerLocationButton}
+                ${sellerWhatsApp}
             </div>
         `;
     } else {
         sellerFieldHtml = `
-            <input type="text" id="editSellerName" value="${order.seller.name}" readonly style="${inputStyle}" />
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="flex:1;">
+                    <div style="font-size:14px; font-weight:500; color:#0b1e3a; padding:4px 0;">${order.seller.name}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-phone"></i> ${order.seller.phone || 'غير متوفر'}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-map-pin"></i> ${order.seller.address || 'غير متوفر'}</div>
+                </div>
+                ${sellerWhatsApp}
+            </div>
             <input type="hidden" id="editSellerPhone" value="${order.seller.phone || ''}" />
             <input type="hidden" id="editSellerAddress" value="${order.seller.address || ''}" />
             <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -5309,11 +5330,19 @@ window.openLocationModalForSeller = function(orderId) {
                 <span style="font-size:13px; color:#6b7f9e;"><i class="fas fa-link"></i> رابط الموقع:</span>
                 <span style="font-size:14px; color:#0b1e3a;">${buyerLocationHtml}</span>
                 ${buyerLocationButton}
+                ${buyerWhatsApp}
             </div>
         `;
     } else {
         buyerFieldHtml = `
-            <input type="text" id="editBuyerName" value="${order.buyer.name}" readonly style="${inputStyle}" />
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="flex:1;">
+                    <div style="font-size:14px; font-weight:500; color:#0b1e3a; padding:4px 0;">${order.buyer.name}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-phone"></i> ${order.buyer.phone || 'غير متوفر'}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-map-pin"></i> ${order.buyer.address || 'غير متوفر'}</div>
+                </div>
+                ${buyerWhatsApp}
+            </div>
             <input type="hidden" id="editBuyerPhone" value="${order.buyer.phone || ''}" />
             <input type="hidden" id="editBuyerAddress" value="${order.buyer.address || ''}" />
             <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
@@ -5350,10 +5379,20 @@ window.openLocationModalForSeller = function(orderId) {
                     <input type="text" id="editDelegateAddress" class="editable-field" value="${order.delegate.address || ''}" placeholder="عنوان المندوب" style="width:100%; padding:6px 10px; border:1px solid #dce3ef; border-radius:10px; font-size:13px; background:#fafdff; color:#1f2a44; font-weight:500;" />
                 </div>
             </div>
+            <div style="margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                ${delegateWhatsApp}
+            </div>
         `;
     } else {
         delegateFieldHtml = `
-            <input type="text" id="editDelegateName" value="${order.delegate.name}" readonly style="${inputStyle}" />
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="flex:1;">
+                    <div style="font-size:14px; font-weight:500; color:#0b1e3a; padding:4px 0;">${order.delegate.name}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-phone"></i> ${order.delegate.phone || 'غير متوفر'}</div>
+                    <div style="font-size:13px; color:#4a5b77;"><i class="fas fa-map-pin"></i> ${order.delegate.address || 'غير متوفر'}</div>
+                </div>
+                ${delegateWhatsApp}
+            </div>
             <input type="hidden" id="editDelegatePhone" value="${order.delegate.phone || ''}" />
             <input type="hidden" id="editDelegateAddress" value="${order.delegate.address || ''}" />
         `;
@@ -5439,175 +5478,183 @@ window.openLocationModalForSeller = function(orderId) {
         </div>
     `;
 
-                // ===== إذا كان في وضع التعديل، إضافة وظائف البحث والقوائم المنسدلة =====
-                if (editMode) {
-                    // دوال البحث للبائع
-                    window.filterSellerList = function(value) {
-                        const dropdown = document.getElementById('sellerDropdown');
-                        const options = dropdown.querySelectorAll('option');
-                        const searchVal = value.toLowerCase();
-                        options.forEach(opt => {
-                            if (opt.value.toLowerCase().includes(searchVal) || opt.text.toLowerCase().includes(
-                                    searchVal)) {
-                                opt.style.display = '';
-                            } else {
-                                opt.style.display = 'none';
-                            }
-                        });
-                    };
-
-                    window.showSellerDropdown = function() {
-                        document.getElementById('sellerDropdown').style.display = 'block';
-                    };
-
-                    window.hideSellerDropdown = function() {
-                        document.getElementById('sellerDropdown').style.display = 'none';
-                    };
-
-                    // اختيار بائع من القائمة
-                    document.getElementById('sellerDropdown').addEventListener('click', function(e) {
-                        if (e.target.tagName === 'OPTION') {
-                            const phone = e.target.value;
-                            const user = usersList.find(u => u.phone === phone);
-                            document.getElementById('editSellerSearch').value = phone;
-                            document.getElementById('editSellerPhone').value = phone;
-                            if (user) {
-                                document.getElementById('editSellerName').value = user.name || '';
-                                document.getElementById('editSellerAddress').value = user.address || '';
-                            }
-                            hideSellerDropdown();
-                        }
-                    });
-
-                    // دوال البحث للمشتري
-                    window.filterBuyerList = function(value) {
-                        const dropdown = document.getElementById('buyerDropdown');
-                        const options = dropdown.querySelectorAll('option');
-                        const searchVal = value.toLowerCase();
-                        options.forEach(opt => {
-                            if (opt.value.toLowerCase().includes(searchVal) || opt.text.toLowerCase().includes(
-                                    searchVal)) {
-                                opt.style.display = '';
-                            } else {
-                                opt.style.display = 'none';
-                            }
-                        });
-                    };
-
-                    window.showBuyerDropdown = function() {
-                        document.getElementById('buyerDropdown').style.display = 'block';
-                    };
-
-                    window.hideBuyerDropdown = function() {
-                        document.getElementById('buyerDropdown').style.display = 'none';
-                    };
-
-                    // اختيار مشتري من القائمة
-                    document.getElementById('buyerDropdown').addEventListener('click', function(e) {
-                        if (e.target.tagName === 'OPTION') {
-                            const phone = e.target.value;
-                            const user = usersList.find(u => u.phone === phone);
-                            document.getElementById('editBuyerSearch').value = phone;
-                            document.getElementById('editBuyerPhone').value = phone;
-                            if (user) {
-                                document.getElementById('editBuyerName').value = user.name || '';
-                                document.getElementById('editBuyerAddress').value = user.address || '';
-                            }
-                            hideBuyerDropdown();
-                        }
-                    });
-
-                    // دوال البحث للمندوب
-                    window.filterDelegateList = function(value) {
-                        const dropdown = document.getElementById('delegateDropdown');
-                        if (!dropdown) return;
-                        const options = dropdown.querySelectorAll('option');
-                        const searchVal = value.toLowerCase();
-                        options.forEach(opt => {
-                            if (opt.value && (opt.value.toLowerCase().includes(searchVal) || opt.text
-                                    .toLowerCase().includes(searchVal))) {
-                                opt.style.display = '';
-                            } else {
-                                opt.style.display = 'none';
-                            }
-                        });
-                        // إذا كان هناك خيارات مخفية، نظهر القائمة
-                        let hasVisible = false;
-                        options.forEach(opt => {
-                            if (opt.style.display !== 'none') hasVisible = true;
-                        });
-                        if (hasVisible) {
-                            dropdown.style.display = 'block';
-                        } else {
-                            dropdown.style.display = 'none';
-                        }
-                    };
-
-                    window.showDelegateDropdown = function() {
-                        const dropdown = document.getElementById('delegateDropdown');
-                        if (!dropdown) return;
-                        // تحديث الخيارات قبل العرض
-                        const searchInput = document.getElementById('editDelegateSearch');
-                        if (searchInput) {
-                            filterDelegateList(searchInput.value);
-                        }
-                        dropdown.style.display = 'block';
-                    };
-
-                    window.hideDelegateDropdown = function() {
-                        setTimeout(function() {
-                            const dropdown = document.getElementById('delegateDropdown');
-                            if (dropdown) {
-                                dropdown.style.display = 'none';
-                            }
-                        }, 200);
-                    };
-
-                    // اختيار مندوب من القائمة
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const delegateDropdown = document.getElementById('delegateDropdown');
-                        if (delegateDropdown) {
-                            delegateDropdown.addEventListener('click', function(e) {
-                                if (e.target.tagName === 'OPTION') {
-                                    const phone = e.target.value;
-                                    if (!phone) {
-                                        hideDelegateDropdown();
-                                        return;
-                                    }
-                                    const user = usersList.find(u => u.phone === phone);
-                                    document.getElementById('editDelegateSearch').value = phone;
-                                    document.getElementById('editDelegatePhone').value = phone;
-                                    if (user) {
-                                        document.getElementById('editDelegateName').value = user.name || '';
-                                        document.getElementById('editDelegateAddress').value = user.address ||
-                                            '';
-                                    }
-                                    hideDelegateDropdown();
-                                }
-                            });
-                        }
-
-                        // منع إدخال أي شيء غير أرقام في حقول البحث الخاصة بالمندوب
-                        const delegateSearch = document.getElementById('editDelegateSearch');
-                        if (delegateSearch) {
-                            delegateSearch.addEventListener('input', function() {
-                                this.value = this.value.replace(/[^0-9]/g, '');
-                                filterDelegateList(this.value);
-                            });
-                        }
-                    });
+    // ===== إذا كان في وضع التعديل، إضافة وظائف البحث والقوائم المنسدلة =====
+    if (editMode) {
+        // دوال البحث للبائع
+        window.filterSellerList = function(value) {
+            const dropdown = document.getElementById('sellerDropdown');
+            const options = dropdown.querySelectorAll('option');
+            const searchVal = value.toLowerCase();
+            options.forEach(opt => {
+                if (opt.value.toLowerCase().includes(searchVal) || opt.text.toLowerCase().includes(searchVal)) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
                 }
+            });
+        };
 
-                // إضافة مستمع للأحداث لفتح معاينة الصور
-                document.querySelectorAll('#orderDetailContent .images-grid img').forEach(img => {
-                    img.addEventListener('click', function() {
-                        const src = this.getAttribute('src');
-                        if (src) {
-                            openImagePreview([src], true);
-                        }
-                    });
-                });
+        window.showSellerDropdown = function() {
+            document.getElementById('sellerDropdown').style.display = 'block';
+        };
+
+        window.hideSellerDropdown = function() {
+            document.getElementById('sellerDropdown').style.display = 'none';
+        };
+
+        // اختيار بائع من القائمة
+        document.getElementById('sellerDropdown').addEventListener('click', function(e) {
+            if (e.target.tagName === 'OPTION') {
+                const phone = e.target.value;
+                const user = usersList.find(u => u.phone === phone);
+                document.getElementById('editSellerSearch').value = phone;
+                document.getElementById('editSellerPhone').value = phone;
+                if (user) {
+                    document.getElementById('editSellerName').value = user.name || '';
+                    document.getElementById('editSellerAddress').value = user.address || '';
+                }
+                hideSellerDropdown();
             }
+        });
+
+        // دوال البحث للمشتري
+        window.filterBuyerList = function(value) {
+            const dropdown = document.getElementById('buyerDropdown');
+            const options = dropdown.querySelectorAll('option');
+            const searchVal = value.toLowerCase();
+            options.forEach(opt => {
+                if (opt.value.toLowerCase().includes(searchVal) || opt.text.toLowerCase().includes(searchVal)) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+        };
+
+        window.showBuyerDropdown = function() {
+            document.getElementById('buyerDropdown').style.display = 'block';
+        };
+
+        window.hideBuyerDropdown = function() {
+            document.getElementById('buyerDropdown').style.display = 'none';
+        };
+
+        // اختيار مشتري من القائمة
+        document.getElementById('buyerDropdown').addEventListener('click', function(e) {
+            if (e.target.tagName === 'OPTION') {
+                const phone = e.target.value;
+                const user = usersList.find(u => u.phone === phone);
+                document.getElementById('editBuyerSearch').value = phone;
+                document.getElementById('editBuyerPhone').value = phone;
+                if (user) {
+                    document.getElementById('editBuyerName').value = user.name || '';
+                    document.getElementById('editBuyerAddress').value = user.address || '';
+                }
+                hideBuyerDropdown();
+            }
+        });
+
+        // دوال البحث للمندوب
+        window.filterDelegateList = function(value) {
+            const dropdown = document.getElementById('delegateDropdown');
+            if (!dropdown) return;
+            const options = dropdown.querySelectorAll('option');
+            const searchVal = value.toLowerCase();
+            options.forEach(opt => {
+                if (opt.value && (opt.value.toLowerCase().includes(searchVal) || opt.text.toLowerCase().includes(searchVal))) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+            let hasVisible = false;
+            options.forEach(opt => {
+                if (opt.style.display !== 'none') hasVisible = true;
+            });
+            if (hasVisible) {
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        };
+
+        window.showDelegateDropdown = function() {
+            const dropdown = document.getElementById('delegateDropdown');
+            if (!dropdown) return;
+            const searchInput = document.getElementById('editDelegateSearch');
+            if (searchInput) {
+                filterDelegateList(searchInput.value);
+            }
+            dropdown.style.display = 'block';
+        };
+
+        window.hideDelegateDropdown = function() {
+            setTimeout(function() {
+                const dropdown = document.getElementById('delegateDropdown');
+                if (dropdown) {
+                    dropdown.style.display = 'none';
+                }
+            }, 200);
+        };
+
+        // اختيار مندوب من القائمة
+        const delegateDropdown = document.getElementById('delegateDropdown');
+        if (delegateDropdown) {
+            delegateDropdown.addEventListener('click', function(e) {
+                if (e.target.tagName === 'OPTION') {
+                    const phone = e.target.value;
+                    if (!phone) {
+                        hideDelegateDropdown();
+                        return;
+                    }
+                    const user = usersList.find(u => u.phone === phone);
+                    document.getElementById('editDelegateSearch').value = phone;
+                    document.getElementById('editDelegatePhone').value = phone;
+                    if (user) {
+                        document.getElementById('editDelegateName').value = user.name || '';
+                        document.getElementById('editDelegateAddress').value = user.address || '';
+                    }
+                    hideDelegateDropdown();
+                }
+            });
+        }
+
+        // منع إدخال غير الأرقام في حقول البحث
+        const delegateSearch = document.getElementById('editDelegateSearch');
+        if (delegateSearch) {
+            delegateSearch.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                filterDelegateList(this.value);
+            });
+        }
+        
+        const sellerSearch = document.getElementById('editSellerSearch');
+        if (sellerSearch) {
+            sellerSearch.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                filterSellerList(this.value);
+            });
+        }
+        
+        const buyerSearch = document.getElementById('editBuyerSearch');
+        if (buyerSearch) {
+            buyerSearch.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                filterBuyerList(this.value);
+            });
+        }
+    }
+
+    // إضافة مستمع للأحداث لفتح معاينة الصور
+    document.querySelectorAll('#orderDetailContent .images-grid img').forEach(img => {
+        img.addEventListener('click', function() {
+            const src = this.getAttribute('src');
+            if (src) {
+                openImagePreview([src], true);
+            }
+        });
+    });
+}
 
             document.getElementById('orderDetailLogoutBtn').addEventListener('click', function() {
                 // إغلاق جميع النوافذ المفتوحة
@@ -7756,16 +7803,16 @@ sendLinkSendBtn.addEventListener('click', function() {
     const whatsappNumber = phone;
 
     // محتوى الرسالة
-    const message =
-        `76404071 ابو علي صاحب نقل \n` +
-        `الرجاء الدخول عبر الرابط لطلب عملية نقل البضائع\n\n` +
-        `الرابط : يحدد لاحقا \n\n` +
-        `قم بتسجيل جديد برقم هاتفك وكلمة المرور\n` +
-        `اضف طلب جديد لعملية النقل \n` +
-        `يمكنك تتبع طلبك من خلال البرنامج \n\n` +
-        `مبلغ التوصيل على: المشتري\n\n` +
-        `أرجو إضافة الصور\n\n` +
-        `شكرا لاختياركم لنا`;
+   const message =
+    `76404071 ابو علي صاحب نقل \n` +
+    `الرجاء الدخول عبر الرابط لطلب عملية نقل البضائع\n\n` +
+    `الرابط : https://projctsappservice-tech.github.io/DeliveryApp/\n\n` +
+    `قم بتسجيل جديد برقم هاتفك وكلمة المرور\n` +
+    `اضف طلب جديد لعملية النقل \n` +
+    `يمكنك تتبع طلبك من خلال البرنامج \n\n` +
+    `مبلغ التوصيل على: المشتري\n\n` +
+    `أرجو إضافة الصور\n\n` +
+    `شكرا لاختياركم لنا`;
 
     // فتح واتساب
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
