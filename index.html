@@ -9,7 +9,7 @@
     <!-- ===== Leaflet CSS ===== -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.json?v=2">
+<link rel="manifest" href="manifest.json?v=3">
 <meta name="theme-color" content="#0d6efd">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -5125,7 +5125,7 @@ window.openLocationModalForSeller = function(orderId) {
             // ===== RENDER ORDER DETAIL =====
             // ===== استبدل دالة renderOrderDetail بالكامل بهذا الكود =====
 
-          function renderOrderDetail(order, editMode = false) {
+        function renderOrderDetail(order, editMode = false) {
     orderDetailId.textContent = order.id;
 
     const hasImages = order.images && order.images.some(img => img && img !== '');
@@ -5209,9 +5209,24 @@ window.openLocationModalForSeller = function(orderId) {
     const readonlyAttr = editMode ? '' : 'readonly';
     const inputStyle = editMode ? '' : 'background:#f0f4fc; color:#1f2a44; font-weight:500; cursor:default;';
 
+    // ===== دالة تنسيق التاريخ =====
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return 'غير محدد';
+        try {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dateStr;
+        } catch (e) {
+            return dateStr;
+        }
+    }
+
     // ===== إنشاء قوائم منسدلة للمستخدمين (البائع، المشتري، المندوب) =====
     const allUsers = usersList;
-    const delegates = usersList.filter(u => u.role === 'مندوب' || u.role === 'مدير');
+    // تشمل جميع المستخدمين (بما فيهم المدراء) للمندوب
+    const allUsersForDelegate = usersList;
 
     // توليد خيارات البائع (جميع المستخدمين ما عدا المدير)
     let sellerOptions = `<option value="">اختر بائع</option>`;
@@ -5235,13 +5250,13 @@ window.openLocationModalForSeller = function(orderId) {
             `<option value="${order.buyer.phone}" selected>${order.buyer.name} - ${order.buyer.phone}</option>`;
     }
 
-    // توليد خيارات المندوب (المندوبين فقط)
+    // توليد خيارات المندوب (جميع المستخدمين بما فيهم المدراء)
     let delegateOptions = `<option value="">اختر مندوب</option>`;
-    delegates.forEach(u => {
+    allUsersForDelegate.forEach(u => {
         const selected = (u.phone === order.delegate.phone) ? 'selected' : '';
-        delegateOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone}</option>`;
+        delegateOptions += `<option value="${u.phone}" ${selected}>${u.name} - ${u.phone} (${u.role})</option>`;
     });
-    if (!delegates.find(u => u.phone === order.delegate.phone) && order.delegate.phone) {
+    if (!allUsersForDelegate.find(u => u.phone === order.delegate.phone) && order.delegate.phone) {
         delegateOptions +=
             `<option value="${order.delegate.phone}" selected>${order.delegate.name} - ${order.delegate.phone}</option>`;
     }
