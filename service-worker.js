@@ -1,5 +1,5 @@
 // service-worker.js
-const CACHE_NAME = "DelivirayApp-v2";
+const CACHE_NAME = "DelivirayApp-v3";
 
 // استخدم المسارات النسبية بدلاً من المطلقة
 const urlsToCache = [
